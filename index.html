@@ -1476,21 +1476,18 @@ async function testClaudeKey(){
 async function claudeAPI(body){
   const key = getClaudeKey();
   if(!key) throw new Error('Clé Claude manquante — Paramètres → Claude IA');
-  // Passer par le proxy local (server.js)
-  try {
-    const r = await fetch('http://127.0.0.1:3737/claude', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({apiKey: key, ...body})
-    });
-    if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error('Claude '+r.status+': '+(e.error?.message||'Erreur serveur')); }
-    return r.json();
-  } catch(e) {
-    if(e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-      throw new Error('Serveur Claude non démarré — lancez DEMARRER_SERVEUR.bat');
-    }
-    throw e;
-  }
+  // Appel direct API Anthropic (fonctionne depuis HTTPS)
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01'
+    },
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error('Claude '+r.status+': '+(e.error?.message||'Clé invalide ?')); }
+  return r.json();
 }
 
 // === CHARGEMENT CLIENTS ANTI-429 ===
